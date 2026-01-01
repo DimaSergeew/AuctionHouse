@@ -1,0 +1,11 @@
+name: AuctionHouse
+version: "1.0"
+main: me.bedepay.auctionhouse.AuctionHouse
+description: AuctionHouse plugin for Minecraft
+api-version: "1.21.11"
+dependencies:
+  server:
+    Vault:
+      load: AFTER
+      required: true
+      join-classpath: true
