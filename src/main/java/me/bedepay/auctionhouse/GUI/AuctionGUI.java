@@ -6,7 +6,6 @@ import dev.masmc05.invapi.api.view.InventoryViewConstructor;
 import me.bedepay.auctionhouse.AuctionHouse;
 import me.bedepay.auctionhouse.database.StorageSystem;
 import me.bedepay.auctionhouse.database.data.AuctionData;
-import me.bedepay.auctionhouse.managers.AuctionManager;
 import me.bedepay.auctionhouse.util.PathShortening;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -28,10 +27,15 @@ public class AuctionGUI implements InventoryViewConstructor {
         }
         this.player = player;
         StorageSystem storageSystem = AuctionHouse.getStorageSystem();
-        if (storageSystem == null || storageSystem.itemLotsSize() == 0) {
-            return;
+        if (storageSystem == null) {
+            throw new IllegalArgumentException("storageSystem null AuctionGUI construct");
         }
         for (AuctionData auctionData : storageSystem.getHashItemLots().values()) {
+            if (auctionData == null
+                    || auctionData.itemStack() == null
+                    || auctionData.itemStack().getType() == Material.AIR) {
+                continue;
+            }
             ahInventory.addItem(auctionData.itemStack());
         }
     }
@@ -90,12 +94,16 @@ public class AuctionGUI implements InventoryViewConstructor {
                 if (currentItem == null || currentItem.getType() == Material.AIR) {
                     return;
                 }
-                AuctionData auctionData = new AuctionManager().getAuctionData(currentItem);
-                if (auctionData == null) {
+                Short itemLot = AuctionHouse.getAuctionManager().getAuctionData(currentItem);
+                if (itemLot == null) {
                     return;
                 }
-                new AuctionManager().buyAuction(player, auctionData);
+                AuctionHouse.getAuctionManager().buyAuction(player, itemLot);
             }
         };
+    }
+
+    public static AuctionGUI getGUI(Player player) {
+        return new AuctionGUI(player);
     }
 }

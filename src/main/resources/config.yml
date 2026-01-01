@@ -2,4 +2,4 @@ AuctionSettings:
   name: "Аукцион"
   min-price: 100
   max-price: 10000000
-  time-to-expiration: 60000 # 1 minute
+  time-expiration: 60000 # 1 minute

@@ -2,11 +2,14 @@ package me.bedepay.auctionhouse.managers;
 
 import io.papermc.paper.persistence.PersistentDataContainerView;
 import me.bedepay.auctionhouse.AuctionHouse;
+import me.bedepay.auctionhouse.GUI.AuctionGUI;
 import me.bedepay.auctionhouse.database.data.AuctionData;
 import net.kyori.adventure.text.Component;
 import net.milkbowl.vault.economy.Economy;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -18,9 +21,9 @@ import java.util.UUID;
 
 public class AuctionManager {
 
-    private final Random RANDOM = new Random();
+    private static final Random RANDOM = new Random();
 
-    public void managerData(Player player, long price, AuctionHouse plugin) {
+    public void managerData(Player player, double price, AuctionHouse plugin) {
         ItemStack playerItem = player.getInventory().getItemInMainHand();
         ItemMeta metaItem = playerItem.getItemMeta();
         if (playerItem.getType() == Material.AIR) {
@@ -31,7 +34,7 @@ public class AuctionManager {
         List<Component> originalLore = metaItem.lore();
         metaItem.lore(List.of(Component.text("Владелец: " + player.getName() + " " + "Цена: " + price + " $")));
         playerItem.setItemMeta(metaItem);
-        //random itemLot
+        // random itemLot
         short itemLot = (short) RANDOM.nextInt(Short.MAX_VALUE);
         while (AuctionHouse.getStorageSystem().containsItemLot(itemLot)) {
             itemLot = (short) RANDOM.nextInt(Short.MAX_VALUE);
@@ -40,11 +43,12 @@ public class AuctionManager {
         playerItem.editPersistentDataContainer((pdc) -> {
             pdc.set(new NamespacedKey(plugin, "auctionhouse_itemLot"), PersistentDataType.SHORT, ITEM_LOT);
         });
-        AuctionHouse.getStorageSystem().saveAction(ITEM_LOT, new AuctionData(playerItem, price, uuid, originalLore, ITEM_LOT));
+        AuctionHouse.getStorageSystem()
+                .saveAction(ITEM_LOT, new AuctionData(playerItem, price, uuid, originalLore));
         player.sendRichMessage("<color:#00ff00>Товар успешно выставлен на продажу!</color>");
     }
 
-    public AuctionData getAuctionData(ItemStack clickItem) {
+    public Short getAuctionData(ItemStack clickItem) {
         if (clickItem == null || clickItem.getType() == Material.AIR) {
             return null;
         }
@@ -53,25 +57,29 @@ public class AuctionManager {
         if (!pdc.has(keyLot)) {
             return null;
         }
-        Short itemLot = clickItem.getPersistentDataContainer().get(keyLot, PersistentDataType.SHORT);
-        if (itemLot == null) {
-            return null;
-        }
-        return AuctionHouse.getStorageSystem().getItemLot(itemLot);
+        return clickItem.getPersistentDataContainer().get(keyLot, PersistentDataType.SHORT);
     }
 
-    public void buyAuction(Player player, AuctionData auctionData) {
+    // playerBuyer from AuctionGUI
+    public void buyAuction(Player playerBuyer, Short itemLot) {
         Economy economy = AuctionHouse.getEconomy();
-//        if (player.getUniqueId().equals(auctionData.seller())) {
-//            player.sendRichMessage("<red>Ты не можешь купить свой товар</red>");
-//            return;
-//        }
-        if (economy.getBalance(player) < auctionData.price()) {
-            player.sendRichMessage("<red>У тебя недостаточно средств</red>");
+        AuctionData auctionData = AuctionHouse.getStorageSystem().getItemLot(itemLot);
+        if (auctionData == null) {
+            playerBuyer.sendRichMessage("<red>Товар не найден</red>");
             return;
         }
-        economy.withdrawPlayer(player, (double) auctionData.price());
+        OfflinePlayer seller = Bukkit.getOfflinePlayer(auctionData.seller());
+        //        if (playerBuyer.getUniqueId().equals(auctionData.seller())) {
+        //            playerBuyer.sendRichMessage("<red>Ты не можешь купить свой товар</red>");
+        //            return;
+        //        }
+        if (economy.getBalance(playerBuyer) < auctionData.price()) {
+            playerBuyer.sendRichMessage("<red>У тебя недостаточно средств</red>");
+            return;
+        }
+        economy.withdrawPlayer(playerBuyer, auctionData.price());
         ItemStack buyItem = auctionData.itemStack();
+
         ItemMeta buyItemMeta = buyItem.getItemMeta();
         if (buyItemMeta.lore() != null) {
             buyItemMeta.lore(auctionData.originalLore());
@@ -80,9 +88,10 @@ public class AuctionManager {
         buyItem.editPersistentDataContainer((pdc) -> {
             pdc.remove(new NamespacedKey(AuctionHouse.getPlugin(AuctionHouse.class), "auctionhouse_itemLot"));
         });
-        player.give(buyItem);
-        player.sendRichMessage("<color:#00ff00>Товар успешно куплен!</color>");
-        AuctionHouse.getStorageSystem().removeItemLot(auctionData.itemLot());
-        AuctionHouse.getAuctionGUI().openMenu(player);
+        playerBuyer.give(buyItem);
+        playerBuyer.sendRichMessage("<color:#00ff00>Товар успешно куплен!</color>");
+        economy.depositPlayer(seller, auctionData.price());
+        AuctionHouse.getStorageSystem().removeItemLot(itemLot);
+        AuctionGUI.getGUI(playerBuyer).openMenu(playerBuyer);
     }
 }

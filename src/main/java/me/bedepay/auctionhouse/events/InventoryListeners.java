@@ -8,7 +8,6 @@ public class InventoryListeners implements Listener {
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-
+        return;
     }
-
 }

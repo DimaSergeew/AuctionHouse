@@ -18,14 +18,21 @@ public final class ConfigManager {
     public void load() {
         ConfigurationSection configSection = plugin.getConfig().getConfigurationSection("AuctionSettings");
         if (configSection == null) {
-            return;
+            throw new IllegalArgumentException("AuctionSettings not found in config.yml");
         }
         int minPrice = configSection.getInt("min-price", 100);
-        int maxPrice = configSection.getInt("max-price", 99999999);
-        int time_to_expiration = configSection.getInt("time-to-expiration", 60000);
+        int maxPrice = configSection.getInt("max-price", 99_999_999);
+        int timeExpiration = configSection.getInt("time-expiration", 60_000);
         String name = configSection.getString("name", "Аукцион");
-        ConfigData.AuctionSettingsData auctionSettingsData
-                = new ConfigData.AuctionSettingsData(minPrice, maxPrice, time_to_expiration, name);
+        if (minPrice < 0) {
+            throw new IllegalArgumentException("The price " + minPrice + " cannot be less than 0");
+        }
+        if (maxPrice < minPrice) {
+            throw new IllegalArgumentException(
+                    "The max price " + maxPrice + " cannot be less than min price " + minPrice);
+        }
+        ConfigData.AuctionSettingsData auctionSettingsData =
+                new ConfigData.AuctionSettingsData(minPrice, maxPrice, timeExpiration, name);
         data = new ConfigData(auctionSettingsData);
     }
 

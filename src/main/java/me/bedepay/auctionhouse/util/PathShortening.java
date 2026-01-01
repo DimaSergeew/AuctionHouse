@@ -12,8 +12,8 @@ public class PathShortening {
         return AuctionHouse.getConfigManager().getData().auctionSettingsData().max_price();
     }
 
-    public static int time_to_expiration() {
-        return AuctionHouse.getConfigManager().getData().auctionSettingsData().time_to_expiration();
+    public static int getTime_Expiration() {
+        return AuctionHouse.getConfigManager().getData().auctionSettingsData().time_expiration();
     }
 
     public static String getName() {

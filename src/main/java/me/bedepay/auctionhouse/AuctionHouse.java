@@ -1,9 +1,9 @@
 package me.bedepay.auctionhouse;
 
 import io.papermc.paper.command.brigadier.CommandSourceStack;
-import me.bedepay.auctionhouse.GUI.AuctionGUI;
 import me.bedepay.auctionhouse.command.AuctionCommand;
 import me.bedepay.auctionhouse.database.StorageSystem;
+import me.bedepay.auctionhouse.managers.AuctionManager;
 import me.bedepay.auctionhouse.managers.ConfigManager;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -17,7 +17,7 @@ public class AuctionHouse extends JavaPlugin {
     private static Economy economy;
     private static ConfigManager configManager;
     private static StorageSystem storageSystem;
-    private static AuctionGUI auctionGUI;
+    private static AuctionManager auctionManager;
 
     @Override
     public void onEnable() {
@@ -25,7 +25,8 @@ public class AuctionHouse extends JavaPlugin {
                 .executionCoordinator(ExecutionCoordinator.simpleCoordinator())
                 .buildOnEnable(this);
         AnnotationParser<CommandSourceStack> annotationParser = new AnnotationParser(cmdManager, this.getClass());
-        RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
+        RegisteredServiceProvider<Economy> rsp =
+                getServer().getServicesManager().getRegistration(Economy.class);
         if (rsp == null) {
             getLogger().warning("AuctionHouse requires Vault to be installed and enabled!");
             getServer().getPluginManager().disablePlugin(this);
@@ -34,6 +35,7 @@ public class AuctionHouse extends JavaPlugin {
         }
         saveResource("messages.yml", false);
         saveDefaultConfig();
+        auctionManager = new AuctionManager();
         configManager = new ConfigManager(this);
         storageSystem = new StorageSystem();
         annotationParser.parse(new AuctionCommand(this));
@@ -57,8 +59,7 @@ public class AuctionHouse extends JavaPlugin {
         return storageSystem;
     }
 
-    public static AuctionGUI getAuctionGUI() {
-        return auctionGUI;
+    public static AuctionManager getAuctionManager() {
+        return auctionManager;
     }
-
 }

@@ -3,7 +3,6 @@ package me.bedepay.auctionhouse.command;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import me.bedepay.auctionhouse.AuctionHouse;
 import me.bedepay.auctionhouse.GUI.AuctionGUI;
-import me.bedepay.auctionhouse.managers.AuctionManager;
 import me.bedepay.auctionhouse.util.PathShortening;
 import org.bukkit.entity.Player;
 import org.incendo.cloud.annotations.Argument;
@@ -22,11 +21,11 @@ public class AuctionCommand {
         if (!(css.getSender() instanceof Player player)) {
             return;
         }
-        new AuctionGUI(player).openMenu(player);
+        AuctionGUI.getGUI(player).openMenu(player);
     }
 
     @Command("ah|auction sell [price]")
-    public void onSellCommand(CommandSourceStack css, @Default("100") @Argument("price") long price) {
+    public void onSellCommand(CommandSourceStack css, @Default("100") @Argument("price") double price) {
         if (!(css.getSender() instanceof Player player)) {
             return;
         }
@@ -35,10 +34,10 @@ public class AuctionCommand {
             return;
         }
         if (price > PathShortening.getMax_Price()) {
-            player.sendRichMessage("<red>Цена не может быть меньше чем:</red> " + PathShortening.getMax_Price());
+            player.sendRichMessage("<red>Цена не может быть больше чем:</red> " + PathShortening.getMax_Price());
             return;
         }
-        new AuctionManager().managerData(player, price, plugin);
+        AuctionHouse.getAuctionManager().managerData(player, price, plugin);
         player.getInventory().setItemInMainHand(null);
     }
 }
